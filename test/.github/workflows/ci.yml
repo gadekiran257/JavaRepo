@@ -1,4 +1,14 @@
-# ...existing code...
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
@@ -13,4 +23,6 @@
 
     - name: Run tests
       run: ./gradlew test
-# ...existing code...
+
+    - name: Build Docker image
+      run: docker build -t myapp:latest .
