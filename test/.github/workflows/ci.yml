@@ -13,4 +13,6 @@
 
     - name: Run tests
       run: ./gradlew test
-# ...existing code...
+
+    - name: Build Docker image
+      run: docker build -t myapp:latest .
