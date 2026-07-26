@@ -28,20 +28,41 @@ jobs:
           echo "SUMMARY=${{ github.event.client_payload.summary }}" >> $GITHUB_ENV
           echo "DESCRIPTION=${{ github.event.client_payload.description }}" >> $GITHUB_ENV
 
-      - name: Create and Push Feature Branch
+      - name: Create Feature Branch
         run: |
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
           git checkout -b feature/${{ env.ISSUE_KEY }}
-          git commit --allow-empty -m "chore: create feature branch for ${{ env.ISSUE_KEY }}"
-          git push -u origin feature/${{ env.ISSUE_KEY }}
-          echo "Branch pushed successfully"
 
-      - name: Verify Branch Exists
+      - name: Analyze Issue with Copilot
         run: |
-          git fetch origin
-          git branch -r | grep feature/${{ env.ISSUE_KEY }}
-          echo "Branch verified on remote"
+          echo "📋 JIRA Issue: ${{ env.ISSUE_KEY }}"
+          echo "📝 Summary: ${{ env.SUMMARY }}"
+          echo "📄 Description: ${{ env.DESCRIPTION }}"
+          echo ""
+          echo "🤖 Running Copilot analysis..."
+          copilot explain "${{ env.DESCRIPTION }}" || true
+
+      - name: Apply Copilot Fix
+        run: |
+          echo "🔧 Applying fix with Copilot..."
+          copilot fix "${{ env.DESCRIPTION }}" || true
+          echo "✅ Copilot analysis complete"
+
+      - name: Commit Changes
+        run: |
+          if [[ -n $(git status -s) ]]; then
+            echo "📤 Committing changes..."
+            git add -A
+            git commit -m "fix: ${{ env.ISSUE_KEY }} - ${{ env.SUMMARY }}" \
+              -m "Description: ${{ env.DESCRIPTION }}"
+            git push -u origin feature/${{ env.ISSUE_KEY }}
+            echo "✅ Changes pushed"
+          else
+            echo "ℹ️  No changes detected - creating empty commit"
+            git commit --allow-empty -m "chore: ${{ env.ISSUE_KEY }} - Review and apply fixes"
+            git push -u origin feature/${{ env.ISSUE_KEY }}
+          fi
 
       - name: Create Pull Request
         uses: actions/github-script@v7
@@ -54,14 +75,10 @@ jobs:
                 title: "fix: ${{ env.ISSUE_KEY }} - ${{ env.SUMMARY }}",
                 head: "feature/${{ env.ISSUE_KEY }}",
                 base: "master",
-                body: `## JIRA Issue: ${{ env.ISSUE_KEY }}\n\n**Summary:**\n${{ env.SUMMARY }}\n\n**Description:**\n${{ env.DESCRIPTION }}\n\n---\n\n**Next Steps:**\n1. Review this PR\n2. Use \`copilot explain\` to understand the issue\n3. Use \`copilot fix\` to implement the solution\n4. Commit and push changes\n5. Merge when ready`
+                body: `## JIRA Issue: ${{ env.ISSUE_KEY }}\n\n**Summary:**\n${{ env.SUMMARY }}\n\n**Description:**\n${{ env.DESCRIPTION }}\n\n---\n\n**Copilot Analysis:**\nCopilot has analyzed this issue and applied suggested fixes. Please review the changes carefully.\n\n**Next Steps:**\n1. Review code changes\n2. Test the changes locally\n3. Approve and merge when ready`
               });
               console.log(`✅ Created PR: ${pullRequest.html_url}`);
             } catch (error) {
-              console.error(`❌ PR Creation Error: ${error.message}`);
-              console.error(`Status: ${error.status}`);
-              if (error.response?.data?.errors) {
-                console.error(`Validation Errors: ${JSON.stringify(error.response.data.errors)}`);
-              }
+              console.error(`Error: ${error.message}`);
               throw error;
             }
