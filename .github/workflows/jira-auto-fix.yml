@@ -53,7 +53,7 @@ jobs:
                 repo: context.repo.repo,
                 title: "fix: ${{ env.ISSUE_KEY }} - ${{ env.SUMMARY }}",
                 head: "feature/${{ env.ISSUE_KEY }}",
-                base: "main",
+                base: "master",
                 body: `## JIRA Issue: ${{ env.ISSUE_KEY }}\n\n**Summary:**\n${{ env.SUMMARY }}\n\n**Description:**\n${{ env.DESCRIPTION }}\n\n---\n\n**Next Steps:**\n1. Review this PR\n2. Use \`copilot explain\` to understand the issue\n3. Use \`copilot fix\` to implement the solution\n4. Commit and push changes\n5. Merge when ready`
               });
               console.log(`✅ Created PR: ${pullRequest.html_url}`);
