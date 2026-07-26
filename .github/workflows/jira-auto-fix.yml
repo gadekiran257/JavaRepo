@@ -2,7 +2,7 @@ name: JIRA Auto Fix
 
 on:
   repository_dispatch:
-    types: tech-uplift
+    types: [jira-issue-labeled]
 
 env:
   GIT_USER_NAME: "Copilot Automation"
@@ -29,6 +29,13 @@ jobs:
           echo "SUMMARY=${{ github.event.client_payload.summary }}" >> $GITHUB_ENV
           echo "DESCRIPTION=${{ github.event.client_payload.description }}" >> $GITHUB_ENV
           echo "ACCEPTANCE_CRITERIA=${{ github.event.client_payload.acceptanceCriteria }}" >> $GITHUB_ENV
+
+      - name: Debug - Show Payload
+        run: |
+          echo "Full payload received:"
+          echo '${{ toJson(github.event.client_payload) }}'
+          echo "ISSUE_KEY: ${{ env.ISSUE_KEY }}"
+          echo "SUMMARY: ${{ env.SUMMARY }}"
 
       - name: Create Feature Branch
         run: |
