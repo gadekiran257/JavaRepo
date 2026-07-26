@@ -27,11 +27,13 @@ jobs:
           echo "SUMMARY=${{ github.event.client_payload.summary }}" >> $GITHUB_ENV
           echo "DESCRIPTION=${{ github.event.client_payload.description }}" >> $GITHUB_ENV
 
-      - name: Create Feature Branch
+      - name: Create and Push Feature Branch
         run: |
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
           git checkout -b feature/${{ env.ISSUE_KEY }}
+          git commit --allow-empty -m "chore: create feature branch for ${{ env.ISSUE_KEY }}"
+          git push origin feature/${{ env.ISSUE_KEY }}
 
       - name: Create Pull Request
         uses: actions/github-script@v7
