@@ -30,32 +30,24 @@ jobs:
           echo "DESCRIPTION=${{ github.event.client_payload.description }}" >> $GITHUB_ENV
           echo "ACCEPTANCE_CRITERIA=${{ github.event.client_payload.acceptanceCriteria }}" >> $GITHUB_ENV
 
-      - name: Debug - Show Payload
-        run: |
-          echo "Full payload received:"
-          echo '${{ toJson(github.event.client_payload) }}'
-          echo "ISSUE_KEY: ${{ env.ISSUE_KEY }}"
-          echo "SUMMARY: ${{ env.SUMMARY }}"
-
       - name: Create Feature Branch
         run: |
           git config user.name "${{ env.GIT_USER_NAME }}"
           git config user.email "${{ env.GIT_USER_EMAIL }}"
           git checkout -b feature/${{ env.ISSUE_KEY }}-fix
 
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot-cli
+
       - name: Run Copilot CLI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Issue: ${{ env.ISSUE_KEY }}"
+          echo "Processing Issue: ${{ env.ISSUE_KEY }}"
           echo "Summary: ${{ env.SUMMARY }}"
           echo "Description: ${{ env.DESCRIPTION }}"
-          echo "Acceptance Criteria: ${{ env.ACCEPTANCE_CRITERIA }}"
           
-          # Call copilot with issue details
-          copilot fix-jira \
-            --issue-key="${{ env.ISSUE_KEY }}" \
-            --summary="${{ env.SUMMARY }}" \
-            --description="${{ env.DESCRIPTION }}" \
-            --criteria="${{ env.ACCEPTANCE_CRITERIA }}"
+          copilot explain "${{ env.DESCRIPTION }}"
 
       - name: Commit Changes
         run: |
@@ -71,12 +63,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const { data: pullRequest } = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: "fix: ${{ env.ISSUE_KEY }} - ${{ env.SUMMARY }}",
-              head: "feature/${{ env.ISSUE_KEY }}-fix",
-              base: "main",
-              body: `Fixes ${{ env.ISSUE_KEY }}\n\n**Description:**\n${{ env.DESCRIPTION }}\n\n**Acceptance Criteria:**\n${{ env.ACCEPTANCE_CRITERIA }}`
-            });
-            console.log(`Created PR: ${pullRequest.html_url}`);
+            try {
+              const { data: pullRequest } = await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: "fix: ${{ env.ISSUE_KEY }} - ${{ env.SUMMARY }}",
+                head: "feature/${{ env.ISSUE_KEY }}-fix",
+                base: "main",
+                body: `Fixes ${{ env.ISSUE_KEY }}\n\n**Description:**\n${{ env.DESCRIPTION }}\n\n**Acceptance Criteria:**\n${{ env.ACCEPTANCE_CRITERIA }}`
+              });
+              console.log(`Created PR: ${pullRequest.html_url}`);
+            } catch (error) {
+              console.log(`PR info: ${error.message}`);
+            }
